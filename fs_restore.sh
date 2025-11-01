@@ -1,6 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
+
+source /usr/local/lib/colors
+
+function printx {
+  printf "${YELLOW}$1${NOCOLOR}\n"
+}
 
 # Check for --include-active flag
 INCLUDE_ACTIVE=false
@@ -12,37 +18,40 @@ fi
 DISK=${1:-}
 BACKUP_DIR=${2:-}
 if [[ -z "$DISK" || -z "$BACKUP_DIR" ]]; then
-  echo "Usage: $0 [--include-active] <target_disk> <backup_dir>  # e.g., /dev/sda /mnt/backup/fs/2025-11-01_XX-XX-XX_boss-recovery"
-  exit 1
+  echo "Restore a backup created by fs_backup"
+  echo "Syntax: $0 [--include-active] <target_disk> <backup_dir>"
+  echo "Where:  <target_disk> is the disk to whicih the restore should be applied."
+  echo "        <backup_dir> is the full path to the directory containing the backup files."
+  exit
 fi
 
 if [[ ! -b "$DISK" ]]; then
   echo "Error: $DISK not a block device."
-  exit 1
+  exit 2
 fi
 
 if [[ ! -d "$BACKUP_DIR" ]]; then
   echo "Error: $BACKUP_DIR not a directory."
-  exit 1
+  exit 2
 fi
 
 # Check for partition table backup
 if [[ ! -f "$BACKUP_DIR/pt-type" ]]; then
   echo "Error: $BACKUP_DIR/pt-type not found."
-  exit 1
+  exit 3
 fi
 
 PT_TYPE=$(cat "$BACKUP_DIR/pt-type")
 if [[ "$PT_TYPE" != "gpt" && "$PT_TYPE" != "dos" ]]; then
   echo "Error: Invalid partition table type in $BACKUP_DIR/pt-type: $PT_TYPE"
-  exit 1
+  exit 3
 fi
 
 # Find available .fsa files
 FSA_FILES=($(ls -1 "$BACKUP_DIR"/*.fsa 2>/dev/null))
 if [[ ${#FSA_FILES[@]} -eq 0 ]]; then
   echo "Error: No .fsa files found in $BACKUP_DIR"
-  exit 1
+  exit 3
 fi
 
 # Get the active root partition
@@ -65,7 +74,7 @@ done
 
 if [[ ${#PARTS[@]} -eq 0 ]]; then
   echo "Error: No valid partitions available for restoration"
-  exit 1
+  exit 3
 fi
 
 # Interactive selection with forced TERM
@@ -74,14 +83,11 @@ SELECTION=$(whiptail --title "Select Partitions to Restore" --checklist "Choose 
   "${MENU_ITEMS[@]}" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then
   echo "Cancelled: No restoration performed"
-  exit 1
+  exit
 fi
-
-echo "DEBUG: SELECTION='$SELECTION'"
 
 # Convert selected tags (indices) to partition names
 IFS=' ' read -ra SELECTED_TAGS <<< "$SELECTION"
-echo "DEBUG: SELECTED_TAGS=${SELECTED_TAGS[@]}"
 SELECTED=()
 for tag in "${SELECTED_TAGS[@]}"; do
   tag_clean=${tag//\"/}
@@ -96,11 +102,10 @@ for tag in "${SELECTED_TAGS[@]}"; do
     echo "Warning: Non-numeric tag '$tag_clean' ignored"
   fi
 done
-echo "DEBUG: SELECTED=${SELECTED[@]}"
 
 if [[ ${#SELECTED[@]} -eq 0 ]]; then
   echo "Error: No valid partitions selected"
-  exit 1
+  exit
 fi
 
 # Restore partition table

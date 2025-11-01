@@ -1,6 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
+
+source /usr/local/lib/colors
+
+function printx {
+  printf "${YELLOW}$1${NOCOLOR}\n"
+}
 
 # Check for --include-active flag
 INCLUDE_ACTIVE=false
@@ -13,12 +19,12 @@ DISK=${1:-}
 TARGET_DIR=${2:-}
 if [[ -z "$DISK" || -z "$TARGET_DIR" ]]; then
   echo "Usage: $0 [--include-active] <source_disk> <target_dir>  # e.g., /dev/sda /mnt/usb"
-  exit 1
+  exit
 fi
 
 if [[ ! -b "$DISK" ]]; then
   echo "Error: $DISK not a block device."
-  exit 1
+  exit 2
 fi
 
 # Backup partition table function
@@ -57,10 +63,8 @@ done < <(sfdisk --list "$DISK" | awk '/^\/dev\// && $1 ~ /'"${DISK##*/}"'[0-9]/ 
 
 if [[ ${#PARTS[@]} -eq 0 ]]; then
   echo "No supported filesystems found on $DISK"
-  exit 1
+  exit 2
 fi
-
-echo "DEBUG: Detected partitions with supported filesystems: ${PARTS[@]}"
 
 # Prepare whiptail checklist items: "index" "partition" "state"
 MENU_ITEMS=()
@@ -74,14 +78,11 @@ SELECTION=$(whiptail --title "Select Partitions to Backup" --checklist "Choose o
   "${MENU_ITEMS[@]}" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then
   echo "Cancelled: No backup directory created"
-  exit 1
+  exit
 fi
-
-echo "DEBUG: SELECTION='$SELECTION'"
 
 # Convert selected tags (indices) to partition names
 IFS=' ' read -ra SELECTED_TAGS <<< "$SELECTION"
-echo "DEBUG: SELECTED_TAGS=${SELECTED_TAGS[@]}"
 SELECTED=()
 for tag in "${SELECTED_TAGS[@]}"; do
   # Remove quotes from tag
@@ -97,11 +98,10 @@ for tag in "${SELECTED_TAGS[@]}"; do
     echo "Warning: Non-numeric tag '$tag_clean' ignored"
   fi
 done
-echo "DEBUG: SELECTED=${SELECTED[@]}"
 
 if [[ ${#SELECTED[@]} -eq 0 ]]; then
   echo "Error: No valid partitions selected"
-  exit 1
+  exit
 fi
 
 # Create backup directory and save partition table only after selection
