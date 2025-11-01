@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -eo pipefail
 
 source /usr/local/lib/colors
 
-# List of filesystems supported by fsarchiver
 supported_fstypes="ext2|ext3|ext4|xfs|btrfs|ntfs|vfat|fat16|fat32|reiserfs"
+backuppath=/mnt/backup
+dateformat="+%Y%m%d_%H%M%S"
 
 function printx {
   printf "${YELLOW}$1${NOCOLOR}\n"
@@ -13,19 +14,45 @@ function printx {
 
 function show_syntax {
   echo "Create a backup of selected partitions using fsarchiver."
-  echo "Syntax: $0 [--include-active] <source_disk> <backup_dir>"
+  echo "Syntax: $0 [--include-active] <sourcedisk> <backup_device>"
   echo "Where:  [--include-active] is an option to force inclusion of partitions that are active; i.e., online."
-  echo "        <source_disk> is the disk containing the partitions to be included in the backup."
-  echo "        <backup_dir> is the full-path to where the backup should be stored."
+  echo "        <sourcedisk> is the disk containing the partitions to be included in the backup."
+  echo "        <backup_device> is the device where the backup should be stored."
   exit
-fi
+}
 
-if [[ ! -b "$source_disk" ]]; then
-  printx "Error: $source_disk not a block device."
-  exit 2
-fi
+function mount_backup_device {
+  # Ensure mount point exists
+  if [ ! -d $backuppath ]; then
+    sudo mkdir -p $backuppath #&> /dev/null
+    if [ $? -ne 0 ]; then
+      printx "Unable to locate or create '$backuppath'."
+      exit 2
+    fi
+  fi
 
-function backup_partition() {
+  # Attempt to mount the device
+  sudo mount $backupdevice $backuppath #&> /dev/null
+  if [ $? -ne 0 ]; then
+    printx "Unable to mount the backup backupdevice '$backupdevice'."
+    exit 2
+  fi
+
+  # Ensure the directory structure exists
+  if [ ! -d "$backuppath/fs" ]; then
+    sudo mkdir "$backuppath/fs" $&> /dev/null
+    if [ $? -ne 0 ]; then
+      printx "Unable to locate or create '$backuppath/fs'."
+      exit 2
+    fi
+  fi
+}
+
+function unmount_backup_device {
+  sudo umount $backuppath
+}
+
+function backup_partition_table() {
   local disk=$1 imgdir=$2
   if fdisk -l "$disk" 2>/dev/null | grep -q '^Disklabel type: gpt'; then
     sgdisk --backup="$imgdir/disk-pt.gpt" "$disk"
@@ -37,27 +64,40 @@ function backup_partition() {
   echo "Saved partition table to $imgdir/"
 }
 
-function parse_arguments {
-  # Check for --include-active flag
-  include_active=false
-  if [[ $# -gt 0 && "$1" == "--include-active" ]]; then
-    include_active=true
-    shift
-  fi
+# --------------------
+# ------- MAIN -------
+# --------------------
 
-  source_disk=${1:-}
-  backup_dir=${2:-}
-}
+# Check for --include-active flag
+include_active=false
+if [[ $# -gt 0 && "$1" == "--include-active" ]]; then
+  include_active=true
+  shift
+fi
 
-parse_arguments
-if [[ -z "$source_disk" || -z "$backup_dir" ]]; then
+# Get other arguments
+sourcedisk=${1:-}
+backupdevice=${2:-}
+
+# echo "include-active=$include_active"
+# echo "sourcedisk=$sourcedisk"
+# echo "backupdevice=$backupdevice"
+
+if [[ -z "$sourcedisk" || -z "$backupdevice" ]]; then
   show_syntax
 fi
 
-if [[ ! -b "$source_disk" ]]; then
-  printx "Error: $source_disk not a block device."
+if [[ ! -b "$backupdevice" ]]; then
+  printx "Error: $backupdevice not a block device."
   exit 2
 fi
+
+if [[ ! -b "$sourcedisk" ]]; then
+  printx "Error: $sourcedisk not a block device."
+  exit 2
+fi
+
+mount_backup_device
 
 # Get the active root partition
 root_part=$(findmnt -n -o SOURCE /)
@@ -68,17 +108,16 @@ while IFS= read -r part; do
   fstype=$(lsblk -fno fstype "$part" | head -n1)
   if [[ -n "$fstype" && $fstype =~ ^($supported_fstypes)$ ]]; then
     if [[ "$part" == "$root_part" && "$include_active" == "false" ]]; then
-      printf "Note: Skipping $part (active root partition; use --include-active to back up)"
+      # Skip active partitions unless user specifically asks to include them
+      echo "Note: Skipping $part (active root partition; use --include-active to back up)"
     else
       partitions+=("$part")
     fi
-  else
-    printf "Note: Skipping $part (filesystem '$fstype' not supported by fsarchiver)"
   fi
-done < <(sfdisk --list "$source_disk" | awk '/^\/dev\// && $1 ~ /'"${source_disk##*/}"'[0-9]/ {print $1}' | sort)
+done < <(sfdisk --list "$sourcedisk" | awk '/^\/dev\// && $1 ~ /'"${sourcedisk##*/}"'[0-9]/ {print $1}' | sort)
 
 if [[ ${#partitions[@]} -eq 0 ]]; then
-  printx "No supported filesystems found on $source_disk"
+  printx "No supported filesystems found on $sourcedisk"
   exit 2
 fi
 
@@ -93,7 +132,7 @@ export TERM=xterm
 selection=$(whiptail --title "Select Partitions to Backup" --checklist "Choose one or more:" 15 60 ${#partitions[@]} \
   "${menu_items[@]}" 3>&1 1>&2 2>&3)
 if [[ $? -ne 0 ]]; then
-  printx "Cancelled: No backup directory created"
+  # User cancelled
   exit
 fi
 
@@ -120,10 +159,10 @@ if [[ ${#selected[@]} -eq 0 ]]; then
   exit
 fi
 
-# Create backup directory and save partition table only after selection
-imgdir="$backup_dir/$(date +%Y%m%d_%H%M%S)_$(hostname -s)"
+# Create backup directory and save partition table
+imgdir="$backuppath/fs/$(date $dateformat)_$(hostname -s)"
 mkdir -p "$imgdir"
-backup_partition "$source_disk" "$imgdir"
+backup_partition_table "$sourcedisk" "$imgdir"
 
 echo "Backing up selected partitions to $imgdir/ ..."
 
@@ -141,20 +180,32 @@ for part in "${selected[@]}"; do
     fi
   fi
 
-  suffix=${part##$source_disk}
-  fsa_file="$imgdir/${source_disk##*/}$suffix.fsa"
+  suffix=${part##$sourcedisk}
+  fsa_file="$imgdir/${sourcedisk##*/}$suffix.fsa"
+
+  # echo "sourcedisk=$sourcedisk"
+  # echo "imgdir=$imgdir"
+  # echo "part=$part"
+  # echo "suffix=$suffix"
+  # echo "sourcedisk##*/=${sourcedisk##*/}"
+  # echo "part="
 
   options="-v -j$(nproc) -Z3"
   if $mounted_rw; then
     options="$options -A"
   fi
 
+  logfile="/tmp/fs_backup_${sourcedisk##*/}$suffix.out"
+
   echo "Backing up $part -> $fsa_file"
-  if ! fsarchiver savefs $options "$fsa_file" "$part"; then
+  if ! fsarchiver savefs $options "$fsa_file" "$part" &> $logfile; then
     printx "Error: Failed to back up $part"
-    continue
+  else
+    echo "Output of fsarchvier written to '$logfile'"
   fi
 done
 
 echo "✅ Backup complete: $imgdir"
-ls -lh "$imgdir"
+# ls -lh "$imgdir"
+
+unmount_backup_device

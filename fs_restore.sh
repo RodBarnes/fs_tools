@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -eo pipefail
 
 source /usr/local/lib/colors
+
+backuppath=/mnt/backup
 
 function printx {
   printf "${YELLOW}$1${NOCOLOR}\n"
@@ -10,56 +12,144 @@ function printx {
 
 function show_syntax {
   echo "Restore a backup created by fs_backup"
-  echo "Syntax: $0 [--include-active] <target_disk> <backup_dir>"
+  echo "Syntax: $0 [--include-active] <targetdisk> <backup_device> [backup_name]"
   echo "Where:  [--include-active] is an option to direct restoring to partitions that are active; i.e., online."
-  echo "        <target_disk> is the disk to whicih the restore should be applied."
-  echo "        <backup_dir> is the full path to the directory containing the backup files."
+  echo "        <targetdisk> is the disk to whicih the restore should be applied."
+  echo "        <backup_device> is the device directory containing the backup files."
+  echo "        [backup_name] is the name of the specific backup to restore."
   exit
 }
 
-function parse_arguments {
-  # Check for --include-active flag
-  include_active=false
-  if [[ $# -gt 0 && "$1" == "--include-active" ]]; then
-    include_active=true
-    shift
+function mount_backup_device {
+  # Ensure mount point exists
+  if [ ! -d $backuppath ]; then
+    sudo mkdir -p $backuppath #&> /dev/null
+    if [ $? -ne 0 ]; then
+      printx "Unable to locate or create '$backuppath'."
+      exit 2
+    fi
   fi
 
-  target_disk=${1:-}
-  backup_dir=${2:-}
+  # Attempt to mount the device
+  sudo mount $backupdevice $backuppath #&> /dev/null
+  if [ $? -ne 0 ]; then
+    printx "Unable to mount the backup backupdevice '$backupdevice'."
+    exit 2
+  fi
+
+  # Ensure the directory structure exists
+  if [ ! -d "$backuppath/fs" ]; then
+    sudo mkdir "$backuppath/fs" $&> /dev/null
+    if [ $? -ne 0 ]; then
+      printx "Unable to locate or create '$backuppath/fs'."
+      exit 2
+    fi
+  fi
 }
 
-parse_arguments
-if [[ -z "$target_disk" || -z "$backup_dir" ]]; then
+function unmount_backup_device {
+  sudo umount $backuppath
+}
+
+function select_archive () {
+  # Get the archvies and allow selecting
+  echo "Listing backup files..."
+
+  # Get the archives
+  unset archives
+  while IFS= read -r LINE; do
+    archives+=("${LINE}")
+  done < <( ls "$backuppath/fs" )
+
+  # Get the count of options and increment to include the cancel
+  count="${#archives[@]}"
+  ((count++))
+
+  COLUMNS=1
+  select selection in "${archives[@]}" "Cancel"; do
+    if [[ "$REPLY" =~ ^[0-9]+$ && "$REPLY" -ge 1 && "$REPLY" -le $count ]]; then
+      case ${selection} in
+        "Cancel")
+          # If the user decides to cancel...
+          break
+          ;;
+        *)
+          archive=$selection
+          break
+          ;;
+      esac
+    else
+      printx "Invalid selection. Please enter a number between 1 and $count."
+    fi
+  done
+
+  archivepath="$backuppath/fs/$archive"
+}
+
+# --------------------
+# ------- MAIN -------
+# --------------------
+
+# Check for --include-active flag
+include_active=false
+if [[ $# -gt 0 && "$1" == "--include-active" ]]; then
+  include_active=true
+  shift
+fi
+
+targetdisk=${1:-}
+backupdevice=${2:-}
+
+if [[ $# -gt 2 ]]; then
+  archivepath="$backuppath/fs/$3"
+fi
+
+echo "include-active=$include_active"
+echo "targetdisk=$targetdisk"
+echo "backupdevice=$backupdevice"
+echo "backuppath=$backuppath"
+
+if [[ -z "$targetdisk" || -z "$backupdevice" ]]; then
   show_syntax
 fi
 
-if [[ ! -b "$target_disk" ]]; then
-  printx "Error: $target_disk not a block device."
+if [[ ! -b "$targetdisk" ]]; then
+  printx "Error: $targetdisk not a block device."
   exit 2
 fi
 
-if [[ ! -d "$backup_dir" ]]; then
-  printx "Error: $backup_dir not a directory."
+if [[ ! -b "$backupdevice" ]]; then
+  printx "Error: $backupdevice not a block device."
+  exit 2
+fi
+
+mount_backup_device
+
+if [ -z $archivepath ]; then
+  select_archive
+fi
+echo "archivepath=$archivepath"
+if [[ ! -d "$archivepath" ]]; then
+  printx "Error: $archivepath not a directory."
   exit 2
 fi
 
 # Check for partition table backup
-if [[ ! -f "$backup_dir/pt-type" ]]; then
-  printx "Error: $backup_dir/pt-type not found."
+if [[ ! -f "$archivepath/pt-type" ]]; then
+  printx "Error: $archivepath/pt-type not found."
   exit 3
 fi
 
-pt_type=$(cat "$backup_dir/pt-type")
+pt_type=$(cat "$archivepath/pt-type")
 if [[ "$pt_type" != "gpt" && "$pt_type" != "dos" ]]; then
-  printx "Error: Invalid partition table type in $backup_dir/pt-type: $pt_type"
+  printx "Error: Invalid partition table type in $archivepath/pt-type: $pt_type"
   exit 3
 fi
 
 # Find available .fsa files
-fsa_files=($(ls -1 "$backup_dir"/*.fsa 2>/dev/null))
+fsa_files=($(ls -1 "$archivepath"/*.fsa 2>/dev/null))
 if [[ ${#fsa_files[@]} -eq 0 ]]; then
-  printx "Error: No .fsa files found in $backup_dir"
+  printx "Error: No .fsa files found in $archivepath"
   exit 3
 fi
 
@@ -118,29 +208,29 @@ if [[ ${#selected[@]} -eq 0 ]]; then
 fi
 
 # Restore partition table
-echo "Restoring partition table to $target_disk ..."
+echo "Restoring partition table to $targetdisk ..."
 if [[ "$pt_type" == "gpt" ]]; then
-  if [[ ! -f "$backup_dir/disk-pt.gpt" ]]; then
-    printx "Error: $backup_dir/disk-pt.gpt not found."
+  if [[ ! -f "$archivepath/disk-pt.gpt" ]]; then
+    printx "Error: $archivepath/disk-pt.gpt not found."
     exit 1
   fi
-  sgdisk --load-backup="$backup_dir/disk-pt.gpt" "$target_disk"
+  sgdisk --load-backup="$archivepath/disk-pt.gpt" "$targetdisk"
 elif [[ "$pt_type" == "dos" ]]; then
-  if [[ ! -f "$backup_dir/disk-pt.sf" ]]; then
-    printx "Error: $backup_dir/disk-pt.sf not found."
+  if [[ ! -f "$archivepath/disk-pt.sf" ]]; then
+    printx "Error: $archivepath/disk-pt.sf not found."
     exit 1
   fi
-  sfdisk "$target_disk" < "$backup_dir/disk-pt.sf"
+  sfdisk "$targetdisk" < "$archivepath/disk-pt.sf"
 fi
 echo "Partition table restoration complete."
 
 # Inform kernel of partition table changes
-partprobe "$target_disk"
+partprobe "$targetdisk"
 
 # Restore selected filesystems
 for part in "${selected[@]}"; do
   partition_device="/dev/$part"
-  fsa_file="$backup_dir/$part.fsa"
+  fsa_file="$archivepath/$part.fsa"
   if [[ ! -f "$fsa_file" ]]; then
     printx "Error: $fsa_file not found, skipping $partition_device"
     continue
@@ -174,5 +264,7 @@ for part in "${selected[@]}"; do
   fi
 done
 
-echo "✅ Restoration complete: $target_disk"
-lsblk -f "$target_disk"
+echo "✅ Restoration complete: $targetdisk"
+# lsblk -f "$targetdisk"
+
+unmount_backup_device
