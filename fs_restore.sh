@@ -240,84 +240,11 @@ if [[ ${#partitions[@]} -eq 0 ]]; then
   exit 3
 fi
 
-# for i in "${!partitions[@]}"; do
-#     printf "%3d) %s [%s]\n" $((i+1)) "${partitions[i]}" "${choices[i]:- }"
-#     read "Restore partition ${partitions[i]}? [y/N]" restore
-#     if [[ $yn != "y" && $yn != "Y" ]]; then
-#       restore_partition 
-#     fi
-# done
-# exit
-
-
-if true; then
-  # Use special bash handling for selecting partitions
-  choices=()
-  # Display menu with toggle support
-  while true; do
-      # clear
-      echo "Select options (press number to toggle, Enter when done):"
+selected=()
       for i in "${!partitions[@]}"; do
-          printf "%3d) %s [%s]\n" $((i+1)) "${partitions[i]}" "${choices[i]:- }"
-      done
-
-      read -n1 -p "Choice: " input
-      echo
-
-      # Confirm selection on Enter
-      [[ -z "$input" ]] && break
-
-      # Toggle selection if valid number
-      if [[ "$input" =~ ^[0-9]+$ ]] && (( input >= 1 && input <= ${#partitions[@]} )); then
-          idx=$((input - 1))
-          if [[ "${choices[idx]}" ]]; then
-              choices[idx]=""
-          else
-              choices[idx]="+"
-          fi
-      else
-          echo "Invalid choice. Press a number from 1-${#partitions[@]}."
-          sleep 1
-      fi
-  done
-
-  # Output selected options
-  selected=()
-  for i in "${!choices[@]}"; do
-      [[ "${choices[i]}" ]] && selected+=("${partitions[i]}")
-  done
-
-  # Output selected options
-  # echo "Show selections"
-  # for i in "${!selected[@]}"; do
-  #     echo "${selected[i]}"
-  # done
-  # read
-else
-  # Use whiptail for selecting partitions
-  # Interactive selection with forced TERM
-  export TERM=xterm
-  selection=$(whiptail --title "Select Partitions to Restore" --checklist "Choose one or more:" 15 60 ${#partitions[@]} \
-    "${menu_items[@]}" 3>&1 1>&2 2>&3)
-  if [[ $? -ne 0 ]]; then
-    echo "Cancelled: No restoration performed"
-    exit
-  fi
-
-  # Convert selected tags (indices) to partition names
-  IFS=' ' read -ra selected_tags <<< "$selection"
-  selected=()
-  for tag in "${selected_tags[@]}"; do
-    tag_clean=${tag//\"/}
-    if [[ $tag_clean =~ ^[0-9]+$ ]]; then
-      i=$((tag_clean-1))
-      if [[ $i -ge 0 && $i -lt ${#partitions[@]} ]]; then
+    read -p "Restore partition ${partitions[i]}? (y/N)" yn
+    if [[ $yn == "y" || $yn == "Y" ]]; then
         selected+=("${partitions[i]}")
-      else
-        printx "Warning: Invalid tag '$tag_clean' ignored"
-      fi
-    else
-      printx "Warning: Non-numeric tag '$tag_clean' ignored"
     fi
   done
 
