@@ -120,12 +120,12 @@ if [[ -z "$targetdisk" || -z "$backupdevice" ]]; then
 fi
 
 if [[ ! -b "$targetdisk" ]]; then
-  printx "Error: $targetdisk not a block device."
+  printx "Error: The specified target disk '$targetdisk' is not a block device."
   exit 2
 fi
 
 if [[ ! -b "$backupdevice" ]]; then
-  printx "Error: $backupdevice not a block device."
+  printx "Error: The specified backup device '$backupdevice' is not a block device."
   exit 2
 fi
 
