@@ -59,31 +59,37 @@ function select_archive () {
   unset archives
   while IFS= read -r LINE; do
     archives+=("${LINE}")
-  done < <( ls "$backuppath/fs" )
+  done < <( ls -1 "$backuppath/fs" )
 
-  # Get the count of options and increment to include the cancel
+  echo "Got the directories"
+
+  # Get the count of options
   count="${#archives[@]}"
-  ((count++))
 
-  COLUMNS=1
-  select selection in "${archives[@]}" "Cancel"; do
-    if [[ "$REPLY" =~ ^[0-9]+$ && "$REPLY" -ge 1 && "$REPLY" -le $count ]]; then
-      case ${selection} in
-        "Cancel")
-          # If the user decides to cancel...
-          break
-          ;;
-        *)
-          archive=$selection
-          break
-          ;;
-      esac
-    else
-      printx "Invalid selection. Please enter a number between 1 and $count."
-    fi
-  done
+  if true; then  
+    # Increment count to include the cancel
+    ((count++))
 
-  archivepath="$backuppath/fs/$archive"
+    COLUMNS=1
+    select selection in "${archives[@]}" "Cancel"; do
+      if [[ "$REPLY" =~ ^[0-9]+$ && "$REPLY" -ge 1 && "$REPLY" -le $count ]]; then
+        case ${selection} in
+          "Cancel")
+            # If the user decides to cancel...
+            break
+            ;;
+          *)
+            archivepath="$backuppath/fs/$selection"
+            break
+            ;;
+        esac
+      else
+        printx "Invalid selection. Please enter a number between 1 and $count."
+      fi
+    done
+  else
+    archivepath="<empty>"
+  fi
 }
 
 # --------------------
