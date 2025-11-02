@@ -236,7 +236,7 @@ for i in "${!fsa_files[@]}"; do
 done
 
 if [[ ${#partitions[@]} -eq 0 ]]; then
-  printx "Error: No valid partitions available for restoration"
+  printx "Error: No valid partitions available for restore."
   exit 3
 fi
 
