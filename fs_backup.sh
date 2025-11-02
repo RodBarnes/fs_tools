@@ -64,6 +64,45 @@ function backup_partition_table() {
   echo "Saved partition table to $imgdir/"
 }
 
+function backup_filesystem {
+    # Detect if mounted RW
+  mounted_rw=false
+  mount_point=$(awk -v part="$part" '$1 == part {print $2}' /proc/mounts)
+  if [[ -n "$mount_point" ]]; then
+    if awk -v part="$part" '$1 == part {print $4}' /proc/mounts | grep -q '^rw'; then
+      mounted_rw=true
+      printx "Warning: $part is mounted RW at $mount_point (live backup may have minor inconsistencies)"
+      printx "Consider remounting read-only with: mount -o remount,ro $mount_point"
+    else
+      echo "Note: $part is mounted read-only at $mount_point"
+    fi
+  fi
+
+  suffix=${part##$sourcedisk}
+  fsa_file="$imgdir/${sourcedisk##*/}$suffix.fsa"
+
+  # echo "sourcedisk=$sourcedisk"
+  # echo "imgdir=$imgdir"
+  # echo "part=$part"
+  # echo "suffix=$suffix"
+  # echo "sourcedisk##*/=${sourcedisk##*/}"
+  # read
+
+  options="-v -j$(nproc) -Z3"
+  if $mounted_rw; then
+    options="$options -A"
+  fi
+
+  logfile="/tmp/fs_backup_${sourcedisk##*/}$suffix.out"
+
+  echo "Backing up $part -> $fsa_file"
+  if ! fsarchiver savefs $options "$fsa_file" "$part" &> $logfile; then
+    printx "Error: Failed to back up $part"
+  else
+    echo "Output of fsarchvier written to '$logfile'"
+  fi
+}
+
 # --------------------
 # ------- MAIN -------
 # --------------------
@@ -167,42 +206,7 @@ backup_partition_table "$sourcedisk" "$imgdir"
 echo "Backing up selected partitions to $imgdir/ ..."
 
 for part in "${selected[@]}"; do
-  # Detect if mounted RW
-  mounted_rw=false
-  mount_point=$(awk -v part="$part" '$1 == part {print $2}' /proc/mounts)
-  if [[ -n "$mount_point" ]]; then
-    if awk -v part="$part" '$1 == part {print $4}' /proc/mounts | grep -q '^rw'; then
-      mounted_rw=true
-      printx "Warning: $part is mounted RW at $mount_point (live backup may have minor inconsistencies)"
-      printx "Consider remounting read-only with: mount -o remount,ro $mount_point"
-    else
-      echo "Note: $part is mounted read-only at $mount_point"
-    fi
-  fi
-
-  suffix=${part##$sourcedisk}
-  fsa_file="$imgdir/${sourcedisk##*/}$suffix.fsa"
-
-  # echo "sourcedisk=$sourcedisk"
-  # echo "imgdir=$imgdir"
-  # echo "part=$part"
-  # echo "suffix=$suffix"
-  # echo "sourcedisk##*/=${sourcedisk##*/}"
-  # echo "part="
-
-  options="-v -j$(nproc) -Z3"
-  if $mounted_rw; then
-    options="$options -A"
-  fi
-
-  logfile="/tmp/fs_backup_${sourcedisk##*/}$suffix.out"
-
-  echo "Backing up $part -> $fsa_file"
-  if ! fsarchiver savefs $options "$fsa_file" "$part" &> $logfile; then
-    printx "Error: Failed to back up $part"
-  else
-    echo "Output of fsarchvier written to '$logfile'"
-  fi
+  backup_filesystem
 done
 
 echo "✅ Backup complete: $imgdir"
