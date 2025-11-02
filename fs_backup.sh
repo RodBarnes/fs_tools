@@ -66,24 +66,28 @@ function backup_partition_table() {
 
 function backup_filesystem {
     # Detect if mounted RW
+  partition_device="/dev/$partition"
   mounted_rw=false
-  mount_point=$(awk -v part="$part" '$1 == part {print $2}' /proc/mounts)
+  mount_point=$(awk -v part="$partition_device" '$1 == part {print $2}' /proc/mounts)
   if [[ -n "$mount_point" ]]; then
-    if awk -v part="$part" '$1 == part {print $4}' /proc/mounts | grep -q '^rw'; then
+    if awk -v part="$partition_device" '$1 == part {print $4}' /proc/mounts | grep -q '^rw'; then
       mounted_rw=true
-      printx "Warning: $part is mounted RW at $mount_point (live backup may have minor inconsistencies)"
+      printx "Warning: $partition_device is mounted RW at $mount_point (live backup may have minor inconsistencies)"
       printx "Consider remounting read-only with: mount -o remount,ro $mount_point"
     else
-      echo "Note: $part is mounted read-only at $mount_point"
+      echo "Note: $partition_device is mounted read-only at $mount_point"
     fi
   fi
 
-  suffix=${part##$sourcedisk}
-  fsa_file="$imgdir/${sourcedisk##*/}$suffix.fsa"
-
+  suffix=${partition##$sourcedisk}
+  fsa_file="$imgdir/$suffix.fsa"
+  
+  # echo "sourcedisk##*/=${sourcedisk##*/}"
+  # echo "partition_device=$partition_device"
+  # echo "fsa_file=$fsa_file"
   # echo "sourcedisk=$sourcedisk"
   # echo "imgdir=$imgdir"
-  # echo "part=$part"
+  # echo "partition=$partition"
   # echo "suffix=$suffix"
   # echo "sourcedisk##*/=${sourcedisk##*/}"
   # read
@@ -93,11 +97,11 @@ function backup_filesystem {
     options="$options -A"
   fi
 
-  logfile="/tmp/fs_backup_${sourcedisk##*/}$suffix.out"
+  logfile="/tmp/fs_backup_$suffix.out"
 
-  echo "Backing up $part -> $fsa_file"
-  if ! fsarchiver savefs $options "$fsa_file" "$part" &> $logfile; then
-    printx "Error: Failed to back up $part"
+  echo "Backing up $partition_device -> $fsa_file"
+  if ! fsarchiver savefs $options "$fsa_file" "$partition_device" &> $logfile; then
+    printx "Error: Failed to back up $partition_device"
   else
     echo "Output of fsarchvier written to '$logfile'"
   fi
@@ -143,14 +147,14 @@ root_part=$(findmnt -n -o SOURCE /)
 
 # Get partitions, excluding unsupported filesystems and optionally the active partition
 partitions=()
-while IFS= read -r part; do
-  fstype=$(lsblk -fno fstype "$part" | head -n1)
+while IFS= read -r partition; do
+  fstype=$(lsblk -fno fstype "$partition" | head -n1)
   if [[ -n "$fstype" && $fstype =~ ^($supported_fstypes)$ ]]; then
-    if [[ "$part" == "$root_part" && "$include_active" == "false" ]]; then
+    if [[ "$partition" == "$root_part" && "$include_active" == "false" ]]; then
       # Skip active partitions unless user specifically asks to include them
-      echo "Note: Skipping $part (active root partition; use --include-active to back up)"
+      echo "Note: Skipping $partition (active root partition; use --include-active to back up)"
     else
-      partitions+=("$part")
+      partitions+=("${partition#/dev/}")
     fi
   fi
 done < <(sfdisk --list "$sourcedisk" | awk '/^\/dev\// && $1 ~ /'"${sourcedisk##*/}"'[0-9]/ {print $1}' | sort)
@@ -188,7 +192,7 @@ backup_partition_table "$sourcedisk" "$imgdir"
 
 echo "Backing up selected partitions to $imgdir/ ..."
 
-for part in "${selected[@]}"; do
+for partition in "${selected[@]}"; do
   backup_filesystem
 done
 
