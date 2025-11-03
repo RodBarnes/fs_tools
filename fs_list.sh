@@ -5,6 +5,7 @@ set -eo pipefail
 source /usr/local/lib/colors
 
 backuppath=/mnt/backup
+descfile=archive.desc
 
 function printx {
   printf "${YELLOW}$1${NOCOLOR}\n"
@@ -62,7 +63,12 @@ function list_archives {
   # Get the archives
   unset archives
   while IFS= read -r name; do
-    echo "$name"
+    if [ -f "$path/fs/$name/$descfile" ]; then
+      comment=$(cat "$path/fs/$name/$descfile")
+    else
+      comment="<no desc>"
+    fi
+    echo "$name: $comment"
     # archives+=("${LINE}")
   done < <( ls -1 "$path/fs" )
 }
