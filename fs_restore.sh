@@ -57,16 +57,14 @@ function unmount_device_at_path {
 }
 
 function select_archive {
+  local path=$1 name archives=()
   # Get the archives
-  unset archives
-  while IFS= read -r LINE; do
-    archives+=("${LINE}")
-  done < <( ls -1 "$backuppath/fs" )
+  while IFS= read -r archive; do
+    archives+=("${archive}")
+  done < <( ls -1 "$path/fs" )
 
-  # Get the count of options
-  count="${#archives[@]}"
-
-  # Increment count to include the cancel
+  # Get the count of options and increment to include cancel
+  local count="${#archives[@]}"
   ((count++))
 
   COLUMNS=1
@@ -78,14 +76,16 @@ function select_archive {
           break
           ;;
         *)
-          archivename=$selection
+          name=$selection
           break
           ;;
       esac
     else
-      printx "Invalid selection. Please enter a number between 1 and $count."
+      printx "Invalid selection. Please enter a number between 1 and $count.">&2
     fi
   done
+
+  echo $name
 }
 
 function restore_partition_table {
@@ -186,8 +186,14 @@ fi
 mount_device_at_path "$backupdevice" "$backuppath"
 
 if [ -z $archivename ]; then
-  select_archive
-  archivepath="$backuppath/fs/$archivename"
+  echo "Select an archive..."
+  archivename=$(select_archive "$backuppath")
+  if [ -z $archivename ]; then
+    echo "Operation cancelled" >&2
+    exit
+  else
+    archivepath="$backuppath/fs/$archivename"
+  fi
 else
   archivepath="$backuppath/fs/$archivename"
   if [[ ! -d "$archivepath" ]]; then
