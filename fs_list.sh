@@ -25,7 +25,7 @@ function mount_device_at_path {
   if [ ! -d $mount ]; then
     sudo mkdir -p $mount #&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount'."
+      printx "Unable to locate or create '$mount'." >&2
       exit 2
     fi
   fi
@@ -33,7 +33,7 @@ function mount_device_at_path {
   # Attempt to mount the device
   sudo mount $device $mount #&> /dev/null
   if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$device'."
+    printx "Unable to mount the backup backupdevice '$device'." >&2
     exit 2
   fi
 
@@ -41,7 +41,7 @@ function mount_device_at_path {
   if [ ! -d "$mount/fs" ]; then
     sudo mkdir "$mount/fs" $&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount/fs'."
+      printx "Unable to locate or create '$mount/fs'." >&2
       exit 2
     fi
   fi
