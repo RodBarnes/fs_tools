@@ -116,6 +116,43 @@ function backup_filesystem {
   fi
 }
 
+function select_partitions {
+  local disk=$1 root=$2
+  # Get partitions, excluding unsupported filesystems and optionally the active partition
+
+  local partitions=()
+  while IFS= read -r partition; do
+    local fstype=$(lsblk -fno fstype "$partition" | head -n1)
+    if [[ -n "$fstype" && $fstype =~ ^($supported_fstypes)$ ]]; then
+      if [[ "$partition" == "$root" && "$include_active" == "false" ]]; then
+        # Skip active partitions unless user specifically asks to include them
+        echo "Note: Skipping $partition (active root partition; use --include-active to back up)" >&2
+      else
+        partitions+=("${partition#/dev/}")
+      fi
+    fi
+  done < <(sfdisk --list "$disk" | awk '/^\/dev\// && $1 ~ /'"${disk##*/}"'[0-9]/ {print $1}' | sort)
+
+  if [[ ${#partitions[@]} -eq 0 ]]; then
+    printx "No supported filesystems found on $disk" >&2
+    exit 2
+  fi
+
+  # Prompt the user
+  local selected=()
+  for i in "${!partitions[@]}"; do
+    read -p "Backup partition ${partitions[i]}? (y/N)" yn
+    if [[ $yn == "y" || $yn == "Y" ]]; then
+      selected+=("${partitions[i]}")
+    fi
+  done
+
+  # Output the selections
+  for i in "${!selected[@]}"; do
+    echo "${selected[i]}"
+  done
+}
+
 # --------------------
 # ------- MAIN -------
 # --------------------
@@ -156,33 +193,8 @@ mount_device_at_path "$backupdevice" "$backuppath"
 # Get the active root partition
 root_part=$(findmnt -n -o SOURCE /)
 
-# Get partitions, excluding unsupported filesystems and optionally the active partition
-partitions=()
-while IFS= read -r partition; do
-  fstype=$(lsblk -fno fstype "$partition" | head -n1)
-  if [[ -n "$fstype" && $fstype =~ ^($supported_fstypes)$ ]]; then
-    if [[ "$partition" == "$root_part" && "$include_active" == "false" ]]; then
-      # Skip active partitions unless user specifically asks to include them
-      echo "Note: Skipping $partition (active root partition; use --include-active to back up)"
-    else
-      partitions+=("${partition#/dev/}")
-    fi
-  fi
-done < <(sfdisk --list "$sourcedisk" | awk '/^\/dev\// && $1 ~ /'"${sourcedisk##*/}"'[0-9]/ {print $1}' | sort)
-
-if [[ ${#partitions[@]} -eq 0 ]]; then
-  printx "No supported filesystems found on $sourcedisk"
-  exit 2
-fi
-
-# Prompt the user
-selected=()
-for i in "${!partitions[@]}"; do
-    read -p "Backup partition ${partitions[i]}? (y/N)" yn
-    if [[ $yn == "y" || $yn == "Y" ]]; then
-      selected+=("${partitions[i]}")
-    fi
-done
+# Selected the partitions to retore
+readarray -t selected < <(select_partitions "$sourcedisk" "$root_part")   
 
 # Output selected options
 # echo "Show selections"
