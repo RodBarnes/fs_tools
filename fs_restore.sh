@@ -12,11 +12,11 @@ function printx {
 
 function show_syntax {
   echo "Restore a backup created by fs_backup"
-  echo "Syntax: $0 [--include-active] <targetdisk> <backup_device> [backup_name]"
+  echo "Syntax: $0 [--include-active] <targetdisk> <backup_device> [-b|backup directory]"
   echo "Where:  [--include-active] is an option to direct restoring to partitions that are active; i.e., online."
   echo "        <targetdisk> is the disk to whicih the restore should be applied."
   echo "        <backup_device> is the device containing the backup files."
-  echo "        [backup_name] is the name of the specific backup to restore."
+  echo "        [-b|backup directory] is the name of the specific backup directory to restore."
   exit
 }
 
@@ -199,27 +199,52 @@ function select_partitions {
 
 trap 'unmount_device_at_path "$backuppath"' EXIT
 
-# Check for --include-active flag
-include_active=false
-if [[ $# -gt 0 && "$1" == "--include-active" ]]; then
-  include_active=true
-  shift
+# Retrieve the arguments
+arg_short=ad:
+arg_long=include-active,directory:
+arg_opts=$(getopt --options "$arg_short" --long "$arg_long" --name "$0" -- "$@")
+if [ $? != 0 ]; then
+    show_syntax
+    exit 1
 fi
 
-# Get the other arguments
-targetdisk=${1:-}
-backupdevice=${2:-}
-archivename=${3:-}
+eval set -- "$arg_opts"
+while true; do
+    case "$1" in
+        -a|--include-active)
+            include_active=true
+            shift
+            ;;
+        -d|--directory)
+            archivename="$2"
+            shift 2
+            ;;
+        --) # End of options
+            shift
+            break
+            ;;
+        *)
+            echo "Internal error parsing arguments: arg=$1"
+            exit 1
+            ;;
+    esac
+done
+
+if [ $# -ge 2 ]; then
+    targetdisk="$1"
+    backupdevice="$2"
+    shift 2
+else
+    show_syntax >&2
+    exit 1
+fi
 
 # echo "backuppath=$backuppath"
 # echo "include-active=$include_active"
 # echo "targetdisk=$targetdisk"
 # echo "backupdevice=$backupdevice"
 # echo "archivename=$archivename"
-
-if [[ -z "$targetdisk" || -z "$backupdevice" ]]; then
-  show_syntax
-fi
+# exit
 
 if [[ ! -b "$targetdisk" ]]; then
   printx "Error: The specified target disk '$targetdisk' is not a block device."
