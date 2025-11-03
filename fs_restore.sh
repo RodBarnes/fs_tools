@@ -128,11 +128,9 @@ function restore_filesystem {
     if [[ "$response" =~ ^[yY]$ ]]; then
       if ! umount "$mount_point"; then
         printx "Error: Failed to unmount $mount_point, skipping $partition_device"
-        continue
       fi
     else
       printx "Skipping restoration of $partition_device"
-      continue
     fi
   fi
   if [[ "$partition_device" == "$root_part" ]]; then
@@ -141,7 +139,6 @@ function restore_filesystem {
   echo "Restoring $fsa_file -> $partition_device"
   if ! fsarchiver restfs "$fsa_file" id=0,dest="$partition_device"; then
     printx "Error: Failed to restore $partition_device"
-    continue
   fi
 }
 
@@ -272,5 +269,3 @@ if [[ "${#selected[@]}" > 0 ]]; then
 else
   printx "No partitions were selected for restore."
 fi
-
-unmount_backup_device
