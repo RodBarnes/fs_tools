@@ -25,6 +25,7 @@ function show_syntax {
 function mount_device_at_path {
   local device=$1
   local mount=$2
+
   # Ensure mount point exists
   if [ ! -d $mount ]; then
     sudo mkdir -p $mount #&> /dev/null
@@ -60,13 +61,13 @@ function unmount_device_at_path {
 }
 
 function select_archive () {
-  # Get the archives
   local name
   local archives=()
+
+  # Get the archives
   while IFS= read -r archive; do
     archives+=("${archive}")
   done < <( ls -1 "$backuppath/fs" )
-
 
   # Get the count of options
   local count="${#archives[@]}"
