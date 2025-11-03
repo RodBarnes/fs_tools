@@ -61,13 +61,14 @@ function unmount_device_at_path {
 }
 
 function select_archive () {
+  local path=$1
   local name
   local archives=()
 
   # Get the archives
   while IFS= read -r archive; do
     archives+=("${archive}")
-  done < <( ls -1 "$backuppath/fs" )
+  done < <( ls -1 "$path/fs" )
 
   # Get the count of options
   local count="${#archives[@]}"
@@ -120,7 +121,7 @@ fi
 mount_device_at_path "$backupdevice" "$backuppath"
 
 echo "Listing backup files..."
-archivename=$(select_archive)
+archivename=$(select_archive "$backuppath")
 
 if [ ! -z $archivename ]; then
   printx "This will completely DELETE the archive '$archivename' and is not recoverable."
