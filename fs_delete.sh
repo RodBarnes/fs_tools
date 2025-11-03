@@ -16,59 +16,60 @@ function readx {
 }
 
 function show_syntax {
-  echo "List backups created by fs_backup"
+  echo "Delete a backup created by fs_backup"
   echo "Syntax: $0 <backup_device>"
   echo "Where:  <backup_device> is the device containing the backup files."
   exit
 }
 
-function mount_backup_device {
+function mount_device_at_path {
+  local device=$1
+  local mount=$2
   # Ensure mount point exists
-  if [ ! -d $backuppath ]; then
-    sudo mkdir -p $backuppath #&> /dev/null
+  if [ ! -d $mount ]; then
+    sudo mkdir -p $mount #&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$backuppath'."
+      printx "Unable to locate or create '$mount'."
       exit 2
     fi
   fi
 
   # Attempt to mount the device
-  sudo mount $backupdevice $backuppath #&> /dev/null
+  sudo mount $device $mount #&> /dev/null
   if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$backupdevice'."
+    printx "Unable to mount the backup backupdevice '$device'."
     exit 2
   fi
 
   # Ensure the directory structure exists
-  if [ ! -d "$backuppath/fs" ]; then
-    sudo mkdir "$backuppath/fs" $&> /dev/null
+  if [ ! -d "$mount/fs" ]; then
+    sudo mkdir "$mount/fs" $&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$backuppath/fs'."
+      printx "Unable to locate or create '$mount/fs'."
       exit 2
     fi
   fi
 }
 
-function unmount_backup_device {
+function unmount_device_at_path {
+  local mount=$1
   # Unmount if mounted
-  if [ -d "$backuppath/fs" ]; then
-    sudo umount $backuppath
+  if [ -d "$mount/fs" ]; then
+    sudo umount $mount
   fi
 }
 
 function select_archive () {
-  # Get the archvies and allow selecting
-  echo "Listing backup files..."
-
   # Get the archives
-  unset archives
+  local name
+  local archives=()
   while IFS= read -r archive; do
     archives+=("${archive}")
   done < <( ls -1 "$backuppath/fs" )
 
 
   # Get the count of options
-  count="${#archives[@]}"
+  local count="${#archives[@]}"
 
   # Increment count to include the cancel
   ((count++))
@@ -82,7 +83,7 @@ function select_archive () {
           break
           ;;
         *)
-          archivename=$selection
+          name=$selection
           break
           ;;
       esac
@@ -91,13 +92,14 @@ function select_archive () {
     fi
   done
 
+  echo $name
 }
 
 # --------------------
 # ------- MAIN -------
 # --------------------
 
-trap unmount_backup_device EXIT
+trap 'unmount_device_at_path "$backuppath"' EXIT
 
 # Get the arguments
 backupdevice=${1:-}
@@ -114,9 +116,10 @@ if [[ ! -b "$backupdevice" ]]; then
   exit 2
 fi
 
-mount_backup_device
+mount_device_at_path "$backupdevice" "$backuppath"
 
-select_archive
+echo "Listing backup files..."
+archivename=$(select_archive)
 
 if [ ! -z $archivename ]; then
   printx "This will completely DELETE the archive '$archivename' and is not recoverable."
@@ -128,5 +131,3 @@ if [ ! -z $archivename ]; then
     echo "'$archivename' has been deleted."
   fi
 fi
-
-unmount_backup_device
