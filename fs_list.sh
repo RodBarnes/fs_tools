@@ -17,57 +17,60 @@ function show_syntax {
   exit
 }
 
-function mount_backup_device {
+function mount_device_at_path {
+  local device=$1
+  local mount=$2
+
   # Ensure mount point exists
-  if [ ! -d $backuppath ]; then
-    sudo mkdir -p $backuppath #&> /dev/null
+  if [ ! -d $mount ]; then
+    sudo mkdir -p $mount #&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$backuppath'."
+      printx "Unable to locate or create '$mount'."
       exit 2
     fi
   fi
 
   # Attempt to mount the device
-  sudo mount $backupdevice $backuppath #&> /dev/null
+  sudo mount $device $mount #&> /dev/null
   if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$backupdevice'."
+    printx "Unable to mount the backup backupdevice '$device'."
     exit 2
   fi
 
   # Ensure the directory structure exists
-  if [ ! -d "$backuppath/fs" ]; then
-    sudo mkdir "$backuppath/fs" $&> /dev/null
+  if [ ! -d "$mount/fs" ]; then
+    sudo mkdir "$mount/fs" $&> /dev/null
     if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$backuppath/fs'."
+      printx "Unable to locate or create '$mount/fs'."
       exit 2
     fi
   fi
 }
 
-function unmount_backup_device {
+function unmount_device_at_path {
+  local mount=$1
   # Unmount if mounted
-  if [ -d "$backuppath/fs" ]; then
-    sudo umount $backuppath
+  if [ -d "$mount/fs" ]; then
+    sudo umount $mount
   fi
 }
 
 function list_archives () {
-  # Get the archvies and allow selecting
-  echo "Listing backup files..."
+  local path=$1
 
   # Get the archives
   unset archives
-  while IFS= read -r archive; do
-    echo "$archive"
+  while IFS= read -r name; do
+    echo "$name"
     # archives+=("${LINE}")
-  done < <( ls -1 "$backuppath/fs" )
+  done < <( ls -1 "$path/fs" )
 }
 
 # --------------------
 # ------- MAIN -------
 # --------------------
 
-trap unmount_backup_device EXIT
+trap 'unmount_device_at_path "$backuppath"' EXIT
 
 # Get the arguments
 backupdevice=${1:-}
@@ -84,8 +87,8 @@ if [[ ! -b "$backupdevice" ]]; then
   exit 2
 fi
 
-mount_backup_device
+mount_device_at_path "$backupdevice" "$backuppath"
 
-list_archives
+echo "Listing backup files..."
+list_archives "$backuppath"
 
-unmount_backup_device
