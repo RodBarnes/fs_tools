@@ -205,7 +205,7 @@ function select_partitions {
 
 trap 'unmount_device_at_path "$backuppath"' EXIT
 
-# Retrieve the arguments
+# Get the arguments
 arg_short=ad:
 arg_long=include-active,directory:
 arg_opts=$(getopt --options "$arg_short" --long "$arg_long" --name "$0" -- "$@")
