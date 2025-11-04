@@ -210,39 +210,39 @@ arg_short=ad:
 arg_long=include-active,directory:
 arg_opts=$(getopt --options "$arg_short" --long "$arg_long" --name "$0" -- "$@")
 if [ $? != 0 ]; then
-    show_syntax
-    exit 1
+  show_syntax
+  exit 1
 fi
 
 eval set -- "$arg_opts"
 while true; do
-    case "$1" in
-        -a|--include-active)
-            include_active=true
-            shift
-            ;;
-        -d|--directory)
-            archivename="$2"
-            shift 2
-            ;;
-        --) # End of options
-            shift
-            break
-            ;;
-        *)
-            echo "Internal error parsing arguments: arg=$1"
-            exit 1
-            ;;
-    esac
+  case "$1" in
+    -a|--include-active)
+      include_active=true
+      shift
+      ;;
+    -d|--directory)
+      archivename="$2"
+      shift 2
+      ;;
+    --) # End of options
+      shift
+      break
+      ;;
+    *)
+      echo "Internal error parsing arguments: arg=$1"
+      exit 1
+      ;;
+  esac
 done
 
 if [ $# -ge 2 ]; then
-    targetdisk="$1"
-    backupdevice="$2"
-    shift 2
+  targetdisk="$1"
+  backupdevice="$2"
+  shift 2
 else
-    show_syntax >&2
-    exit 1
+  show_syntax >&2
+  exit 1
 fi
 
 # echo "backuppath=$backuppath"
