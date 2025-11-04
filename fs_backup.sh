@@ -7,7 +7,7 @@ source /usr/local/lib/colors
 supported_fstypes="ext2|ext3|ext4|xfs|btrfs|ntfs|vfat|fat16|fat32|reiserfs"
 backuppath=/mnt/backup
 dateformat="+%Y%m%d_%H%M%S"
-descfile=archive.desc
+descfile=comment.txt
 
 function printx {
   printf "${YELLOW}$1${NOCOLOR}\n"

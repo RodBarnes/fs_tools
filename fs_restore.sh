@@ -5,7 +5,7 @@ set -eo pipefail
 source /usr/local/lib/colors
 
 backuppath=/mnt/backup
-descfile=archive.desc
+descfile=comment.txt
 
 function printx {
   printf "${YELLOW}$1${NOCOLOR}\n"
