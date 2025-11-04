@@ -80,7 +80,13 @@ function list_archives {
 trap 'unmount_device_at_path "$backuppath"' EXIT
 
 # Get the arguments
-backupdevice=${1:-}
+if [ $# -ge 1 ]; then
+  backupdevice=${1:-}
+  shift 1
+else
+  show_syntax >&2
+  exit 1
+fi
 
 # echo "backupdevice=$backupdevice"
 # echo "backuppath=$backuppath"
