@@ -66,9 +66,9 @@ if [[ -z "$backupdevice" ]]; then
   show_syntax
 fi
 
-if [[ ! -b "$backupdevice" ]]; then
-  printx "Error: The specified backup device '$backupdevice' is not a block device."
-  exit 2
+if [[ "$EUID" != 0 ]]; then
+  printx "This must be run as sudo.\n"
+  exit 1
 fi
 
 mount_device_at_path "$backupdevice" "$backuppath"
