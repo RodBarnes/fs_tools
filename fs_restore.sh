@@ -22,13 +22,13 @@ restore_partition_table() {
   # Restore partition table
   if [[ "$pt_type" == "gpt" ]]; then
     if [[ ! -f "$path/disk-pt.gpt" ]]; then
-      printx "Error: $path/disk-pt.gpt not found."
+      printx "Error: $path/disk-pt.gpt not found." >&2
       exit 1
     fi
     sgdisk --load-backup="$path/disk-pt.gpt" "$disk"
   elif [[ "$pt_type" == "dos" ]]; then
     if [[ ! -f "$path/disk-pt.sf" ]]; then
-      printx "Error: $path/disk-pt.sf not found."
+      printx "Error: $path/disk-pt.sf not found." >&2
       exit 1
     fi
     sfdisk "$disk" < "$path/disk-pt.sf"
@@ -45,33 +45,33 @@ restore_filesystem() {
   local filepath="$path/$part.fsa"
 
   if [[ ! -f "$filepath" ]]; then
-    printx "Error: $filepath not found, skipping $device"
+    printx "Error: $filepath not found, skipping $device" >&2
     continue
   fi
   if [[ ! -b "$device" ]]; then
-    printx "Error: $device not a block device, skipping"
+    printx "Error: $device not a block device, skipping" >&2
     continue
   fi
 
   # Check if partition is mounted
-  local mount_point=$(awk -v part="$device" '$1 == part {print $2}' /proc/mounts)
-  if [[ -n "$mount_point" ]]; then
-    printx "Error: $device is mounted at $mount_point."
+  local mount=$(mountpoint -q $path)
+  if [[ -n "$mount" ]]; then
+    printx "Error: $device is mounted at $mount." >&2
     read -p "Proceed and unmount it first? [y/N] " response
     if [[ "$response" =~ ^[yY]$ ]]; then
-      if ! umount "$mount_point"; then
-        printx "Error: Failed to unmount $mount_point, skipping $device"
+      if ! umount "$mount"; then
+        printx "Error: Failed to unmount $mount, skipping $device" >&2
       fi
     else
-      printx "Skipping restoration of $device"
+      printx "Skipping restoration of $device" >&2
     fi
   fi
   if [[ "$device" == "$root" ]]; then
-    printx "Warning: Restoring active root partition $device may cause system instability"
+    printx "Warning: Restoring active root partition $device may cause system instability" >&2
   fi
   echo "Restoring $filepath -> $device"
   if ! fsarchiver restfs "$filepath" id=0,dest="$device"; then
-    printx "Error: Failed to restore $device"
+    printx "Error: Failed to restore $device" >&2
   fi
 }
 
