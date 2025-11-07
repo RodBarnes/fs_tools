@@ -16,6 +16,19 @@ show_syntax() {
   exit
 }
 
+delete_archive() {
+  local path=$1 name=$2
+
+  printx "This will completely DELETE the archive '$name' and is not recoverable." >&2
+  readx "Are you sure you want to proceed? (y/N) " yn
+  if [[ $yn != "y" && $yn != "Y" ]]; then
+    echo "Operation cancelled." >&2
+  else
+    echo "Deleting '$name'" >&2
+    sudo rm -Rf $path/$name
+  fi
+}
+
 # --------------------
 # ------- MAIN -------
 # --------------------
@@ -46,15 +59,14 @@ fi
 mount_device_at_path "$backupdevice" "$backuppath"
 
 echo "Listing backup files..."
-archivename=$(select_archive "$backuppath")
-
-if [ ! -z $archivename ]; then
-  printx "This will completely DELETE the archive '$archivename' and is not recoverable."
-  readx "Are you sure you want to proceed? (y/N) " yn
-  if [[ $yn != "y" && $yn != "Y" ]]; then
-    echo "Operation cancelled."
+while true; do
+  archivename=$(select_archive "$backuppath")
+  if [ ! -z $archivename ]; then
+    delete_snapshot "$backuppath/$backupdir" "$snapshotname"
   else
-    sudo rm -Rf $backuppath/fs/$archivename
-    echo "'$archivename' has been deleted."
+    exit
   fi
-fi
+done
+
+
+
