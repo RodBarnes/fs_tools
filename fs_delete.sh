@@ -2,8 +2,6 @@
 
 # Delete one or more fs_backups
 
-set -eo pipefail
-
 source /usr/local/lib/fs_shared
 
 show_syntax() {

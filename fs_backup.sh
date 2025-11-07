@@ -2,8 +2,6 @@
 
 # Create a backup of one or more partitions from a drive using fsarchiver
 
-set -eo pipefail
-
 source /usr/local/lib/fs_shared
 
 show_syntax() {

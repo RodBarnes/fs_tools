@@ -2,8 +2,6 @@
 
 # List the fs_backkups
 
-set -eo pipefail
-
 source /usr/local/lib/fs_shared
 
 show_syntax() {

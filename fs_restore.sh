@@ -2,8 +2,6 @@
 
 # Restore an fs_backup
 
-set -eo pipefail
-
 source /usr/local/lib/fs_shared
 
 show_syntax() {
