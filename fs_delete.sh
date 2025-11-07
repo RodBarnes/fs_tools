@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Delete one or more fs_backups
+
 set -eo pipefail
 
 source fs_functions.sh
@@ -10,7 +12,7 @@ descfile=comment.txt
 show_syntax() {
   echo "Delete a backup created by fs_backup"
   echo "Syntax: $0 <backup_device>"
-  echo "Where:  <backup_device> is the device containing the backup files."
+  echo "Where:  <backup_device> can be a device designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
   exit
 }
 

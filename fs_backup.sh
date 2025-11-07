@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Create a backup of one or more partitions from a drive using fsarchiver
+
 set -eo pipefail
 
 source fs_functions.sh
@@ -11,11 +13,11 @@ descfile=comment.txt
 
 show_syntax() {
   echo "Create a backup of selected partitions using fsarchiver."
-  echo "Syntax: $0 <sourcedisk> <backup_device> [-a|--include-active] [-c|--comment "comment"]"
-  echo "Where:  [-a|--include-active] is an option to force inclusion of partitions that are active; i.e., online."
+  echo "Syntax: $0 <source_disk> <backup_device> [-a|--include-active] [-c|--comment "comment"]"
+  echo "Where:  <backup_device> can be a backupdevice designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
+  echo "        <source_disk> is the disk containing the partitions to be included in the backup."
+  echo "        [-a|--include-active] is an option to force inclusion of partitions that are active; i.e., online."
   echo "        [-c|--comment "comment"] is the disk containing the partitions to be included in the backup."
-  echo "        <sourcedisk> is the disk containing the partitions to be included in the backup."
-  echo "        <backup_device> is the device where the backup should be stored."
   exit
 }
 

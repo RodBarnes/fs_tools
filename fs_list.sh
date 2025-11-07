@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# List the fs_backkups
+
 set -eo pipefail
 
 source fs_functions.sh
@@ -11,7 +13,7 @@ descfile=comment.txt
 show_syntax() {
   echo "List backups created by fs_backup"
   echo "Syntax: $0 <backup_device>"
-  echo "Where:  <backup_device> can be a backupdevice designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
+  echo "Where:  <backup_device> can be a device designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
   exit
 }
 

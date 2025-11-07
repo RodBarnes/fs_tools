@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Restore an fs_backup
+
 set -eo pipefail
 
 source fs_functions.sh
@@ -9,10 +11,10 @@ descfile=comment.txt
 
 show_syntax() {
   echo "Restore a backup created by fs_backup"
-  echo "Syntax: $0 [--include-active] <targetdisk> <backup_device> [-b|backup directory]"
-  echo "Where:  [--include-active] is an option to direct restoring to partitions that are active; i.e., online."
-  echo "        <targetdisk> is the disk to whicih the restore should be applied."
-  echo "        <backup_device> is the device containing the backup files."
+  echo "Syntax: $0 <backup_device> <target_disk> [-a|--include-active] [-b|--backup]"
+  echo "Where:  <backup_device> can be a backupdevice designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
+  echo "        <target_disk> is the disk to which the restore should be applied."
+  echo "        [-a|--include-active] is an option to direct restoring to partitions that are active; i.e., online."
   echo "        [-b|backup directory] is the name of the specific backup directory to restore."
   exit
 }
