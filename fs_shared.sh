@@ -5,6 +5,7 @@
 source /usr/local/lib/common
 
 g_descfile=comment.txt
+g_outputfile="/tmp/$0.out"
 g_backuppath=/mnt/backup
 g_backupdir="fs"
 
