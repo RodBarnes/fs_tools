@@ -6,7 +6,7 @@ source /usr/local/lib/fs_shared
 
 show_syntax() {
   echo "Create a backup of selected partitions using fsarchiver."
-  echo "Syntax: $0 <source_disk> <backup_device> [-a|--include-active] [-c|--comment "comment"]"
+  echo "Syntax: $0 <backup_device> <source_disk> [-a|--include-active] [-c|--comment "comment"]"
   echo "Where:  <backup_device> can be a backupdevice designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
   echo "        <source_disk> is the disk containing the partitions to be included in the backup."
   echo "        [-a|--include-active] is an option to force inclusion of partitions that are active; i.e., online."

@@ -2,7 +2,7 @@
 A collection of `bash` scripts to create partition-level backups using fsarchiver.
 
 ## ts_backup.sh
-Usage: `sudo fs_backup <device> [-d] [description]`
+Usage: `sudo fs_backup <backup_device> <source_disk> [-a|--include-active] [-c|--comment "comment"]"`
 
 Creates a full archive of that includes the selected partitions.
 
@@ -17,7 +17,7 @@ Usage: `sudo fs_list <backup_device>`
 Lists the archvies (created by `fs_backup`) found on the designated device.
 
 ## fs_restore.sh
-Usage: `sudo fs_restore <backup_device> <restore_device> [-d] [snapshot_name]`
+Usage: `sudo fs_restore <backup_device> <target_disk> [-a|--include-active] [-b|--backup]"`
 
 Restores an archive (created by `fs_backup`) and allows selecting the specific partitions to restore.  Allows for backing up active (online) partitions.  Best use is to run `fs_restore` from a server's recovery partition or live media.
 
