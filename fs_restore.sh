@@ -2,16 +2,12 @@
 
 set -eo pipefail
 
-source /usr/local/lib/colors
+source fs_functions.sh
 
 backuppath=/mnt/backup
 descfile=comment.txt
 
-function printx {
-  printf "${YELLOW}$1${NOCOLOR}\n"
-}
-
-function show_syntax {
+show_syntax() {
   echo "Restore a backup created by fs_backup"
   echo "Syntax: $0 [--include-active] <targetdisk> <backup_device> [-b|backup directory]"
   echo "Where:  [--include-active] is an option to direct restoring to partitions that are active; i.e., online."
@@ -21,45 +17,7 @@ function show_syntax {
   exit
 }
 
-function mount_device_at_path {
-  local device=$1 mount=$2
-
-  # Ensure mount point exists
-  if [ ! -d $mount ]; then
-    sudo mkdir -p $mount
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount'." >&2
-      exit 2
-    fi
-  fi
-
-  # Attempt to mount the device
-  sudo mount $device $mount
-  if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$device'." >&2
-    exit 2
-  fi
-
-  # Ensure the directory structure exists
-  if [ ! -d "$mount/fs" ]; then
-    sudo mkdir "$mount/fs"
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount/fs'." >&2
-      exit 2
-    fi
-  fi
-}
-
-function unmount_device_at_path {
-  local mount=$1
-
-  # Unmount if mounted
-  if [ -d "$mount/fs" ]; then
-    sudo umount $mount
-  fi
-}
-
-function select_archive {
+select_archive() {
   local path=$1
   
   local name archives=()
@@ -99,7 +57,7 @@ function select_archive {
   echo $name
 }
 
-function restore_partition_table {
+restore_partition_table() {
   local disk=$1 path=$2
 
   # Restore partition table
@@ -121,7 +79,7 @@ function restore_partition_table {
   partprobe "$disk"
 }
 
-function restore_filesystem {
+restore_filesystem() {
   local part=$1 path=$2 root=$3
 
   local device="/dev/$part"
@@ -158,7 +116,7 @@ function restore_filesystem {
   fi
 }
 
-function select_partitions {
+select_partitions() {
   local path=$1 root=$2 active=$2
 
   # Find available .fsa files

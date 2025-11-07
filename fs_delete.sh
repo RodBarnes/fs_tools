@@ -2,66 +2,19 @@
 
 set -eo pipefail
 
-source /usr/local/lib/colors
+source fs_functions.sh
 
 backuppath=/mnt/backup
 descfile=comment.txt
 
-function printx {
-  printf "${YELLOW}$1${NOCOLOR}\n"
-}
-
-function readx {
-  printf "${YELLOW}$1${NOCOLOR}"
-  read -p "" $2
-}
-
-function show_syntax {
+show_syntax() {
   echo "Delete a backup created by fs_backup"
   echo "Syntax: $0 <backup_device>"
   echo "Where:  <backup_device> is the device containing the backup files."
   exit
 }
 
-function mount_device_at_path {
-  local device=$1 mount=$2
-
-  # Ensure mount point exists
-  if [ ! -d $mount ]; then
-    sudo mkdir -p $mount
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount'." >&2
-      exit 2
-    fi
-  fi
-
-  # Attempt to mount the device
-  sudo mount $device $mount
-  if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$device'." >&2
-    exit 2
-  fi
-
-  # Ensure the directory structure exists
-  if [ ! -d "$mount/fs" ]; then
-    sudo mkdir "$mount/fs"
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount/fs'." >&2
-      exit 2
-    fi
-  fi
-}
-
-function unmount_device_at_path {
-  local mount=$1
-
-  # Unmount if mounted
-  if [ -d "$mount/fs" ]; then
-    sudo umount $mount
-  fi
-}
-
-function select_archive {
+select_archive() {
   local path=$1
   
   local name archives=()

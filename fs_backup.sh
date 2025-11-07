@@ -2,18 +2,14 @@
 
 set -eo pipefail
 
-source /usr/local/lib/colors
+source fs_functions.sh
 
 supported_fstypes="ext2|ext3|ext4|xfs|btrfs|ntfs|vfat|fat16|fat32|reiserfs"
 backuppath=/mnt/backup
 dateformat="+%Y%m%d_%H%M%S"
 descfile=comment.txt
 
-function printx {
-  printf "${YELLOW}$1${NOCOLOR}\n"
-}
-
-function show_syntax {
+show_syntax() {
   echo "Create a backup of selected partitions using fsarchiver."
   echo "Syntax: $0 <sourcedisk> <backup_device> [-a|--include-active] [-c|--comment "comment"]"
   echo "Where:  [-a|--include-active] is an option to force inclusion of partitions that are active; i.e., online."
@@ -23,45 +19,7 @@ function show_syntax {
   exit
 }
 
-function mount_device_at_path {
-  local device=$1 mount=$2
-  
-  # Ensure mount point exists
-  if [ ! -d $mount ]; then
-    sudo mkdir -p $mount
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount'." >&2
-      exit 2
-    fi
-  fi
-
-  # Attempt to mount the device
-  sudo mount $device $mount
-  if [ $? -ne 0 ]; then
-    printx "Unable to mount the backup backupdevice '$device'." >&2
-    exit 2
-  fi
-
-  # Ensure the directory structure exists
-  if [ ! -d "$mount/fs" ]; then
-    sudo mkdir "$mount/fs"
-    if [ $? -ne 0 ]; then
-      printx "Unable to locate or create '$mount/fs'." >&2
-      exit 2
-    fi
-  fi
-}
-
-function unmount_device_at_path {
-  local mount=$1
-
-  # Unmount if mounted
-  if [ -d "$mount/fs" ]; then
-    sudo umount $mount
-  fi
-}
-
-function backup_partition_table() {
+backup_partition_table() {
   local disk=$1 path=$2
   # Get the partition info
   if fdisk -l "$disk" 2>/dev/null | grep -q '^Disklabel type: gpt'; then
@@ -73,7 +31,7 @@ function backup_partition_table() {
   fi
 }
 
-function backup_filesystem {
+backup_filesystem() {
   local partfs=$1 path=$2
 
   # Detect if mounted RW
@@ -118,7 +76,7 @@ function backup_filesystem {
   fi
 }
 
-function select_partitions {
+select_partitions() {
   local disk=$1 root=$2
   # Get partitions, excluding unsupported filesystems and optionally the active partition
 
