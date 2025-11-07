@@ -76,7 +76,7 @@ backup_filesystem() {
   fi
 }
 
-select_partitions() {
+select_backup_partitions() {
   local disk=$1 root=$2
   # Get partitions, excluding unsupported filesystems and optionally the active partition
 
@@ -184,8 +184,8 @@ mount_device_at_path "$backupdevice" "$backuppath"
 # Get the active root partition
 root_part=$(findmnt -n -o SOURCE /)
 
-# Selected the partitions to retore
-readarray -t selected < <(select_partitions "$sourcedisk" "$root_part")   
+# Selected the partitions to backup
+readarray -t selected < <(select_backup_partitions "$sourcedisk" "$root_part")   
 
 # Output selected options
 # echo "Show selections"

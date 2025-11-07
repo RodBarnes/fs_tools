@@ -14,48 +14,6 @@ show_syntax() {
   exit
 }
 
-select_archive() {
-  local path=$1
-  
-  local name archives=()
-  
-  # Get the archives
-  while IFS= read -r archive; do
-    if [ -f "$path/fs/$archive/$descfile" ]; then
-      comment=$(cat "$path/fs/$archive/$descfile")
-    else
-      comment="<no desc>"
-    fi
-    archives+=("${archive}: $comment")
-  done < <( ls -1 "$path/fs" )
-
-  # Get the count of options
-  local count="${#archives[@]}"
-
-  # Increment count to include the cancel
-  ((count++))
-
-  COLUMNS=1
-  select selection in "${archives[@]}" "Cancel"; do
-    if [[ "$REPLY" =~ ^[0-9]+$ && "$REPLY" -ge 1 && "$REPLY" -le $count ]]; then
-      case ${selection} in
-        "Cancel")
-          # If the user decides to cancel...
-          break
-          ;;
-        *)
-          name=$selection
-          break
-          ;;
-      esac
-    else
-      printx "Invalid selection. Please enter a number between 1 and $count.">&2
-    fi
-  done
-
-  echo $name
-}
-
 # --------------------
 # ------- MAIN -------
 # --------------------
