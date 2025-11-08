@@ -2,8 +2,8 @@
 
 # Shared code and variables for fs_tools
 
-source /usr/local/lib/colors
-source /usr/local/lib/common
+source /usr/local/lib/color
+source /usr/local/lib/device
 
 g_descfile=comment.txt
 g_outputfile="/tmp/$0.out"
