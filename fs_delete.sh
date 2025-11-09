@@ -44,7 +44,10 @@ else
   show_syntax
 fi
 
+# echo "backuppath=$g_backuppath"
+# echo "backupdir=$g_backupdir"
 # echo "backupdevice=$backupdevice"
+# exit
 
 if [[ -z "$backupdevice" ]]; then
   show_syntax

@@ -37,7 +37,6 @@ backup_filesystem() {
     if awk -v part="$partition_device" '$1 == part {print $4}' /proc/mounts | grep -q '^rw'; then
       mounted_rw=true
       showx "Warning: $partition_device is mounted RW at $mount_point (live backup may have minor inconsistencies)"
-      showx "Consider remounting read-only with: mount -o remount,ro $mount_point"
     else
       show "Note: $partition_device is mounted read-only at $mount_point"
     fi
@@ -46,14 +45,14 @@ backup_filesystem() {
   local suffix=${partfs##$sourcedisk}
   local fsa_file="$path/$suffix.fsa"
   
-  # echo "sourcedisk##*/=${sourcedisk##*/}"
-  # echo "partition_device=$partition_device"
-  # echo "fsa_file=$fsa_file"
-  # echo "sourcedisk=$sourcedisk"
-  # echo "path=$path"
-  # echo "partition=$partition"
-  # echo "suffix=$suffix"
-  # echo "sourcedisk##*/=${sourcedisk##*/}"
+  # show "sourcedisk##*/=${sourcedisk##*/}"
+  # show "partition_device=$partition_device"
+  # show "fsa_file=$fsa_file"
+  # show "sourcedisk=$sourcedisk"
+  # show "path=$path"
+  # show "partition=$partition"
+  # show "suffix=$suffix"
+  # show "sourcedisk##*/=${sourcedisk##*/}"
   # read
 
   local options="-v -j$(nproc) -Z3"
@@ -89,6 +88,12 @@ select_backup_partitions() {
     showx "No supported filesystems found on $disk"
     exit 2
   fi
+
+  # show "partitions..."
+  # for i in "${!partitions[@]}"; do
+  #     show "${partitions[i]}"
+  # done
+  # read
 
   # Prompt the user
   local selected=()
@@ -163,9 +168,12 @@ else
   show_syntax
 fi
 
-# echo "include-active=$include_active"
-# echo "sourcedisk=$sourcedisk"
+# echo "timestamp=$g_timestamp"
+# echo "backuppath=$g_backuppath"
+# echo "backupdir=$g_backupdir"
 # echo "backupdevice=$backupdevice"
+# echo "sourcedisk=$sourcedisk"
+# echo "include-active=$include_active"
 # echo "comment=$comment"
 # exit
 
