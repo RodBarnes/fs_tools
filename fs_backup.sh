@@ -214,7 +214,7 @@ for partition in "${selected[@]}"; do
 done
 
 # Create description in the snapshot directory
-echo "($(sudo du -sh $archivepath | awk '{print $1}')) $comment" > "$archivepath/$descfile"
+echo "($(sudo du -sh $archivepath | awk '{print $1}')) $comment" > "$archivepath/$g_descfile"
 
 echo "✅ Backup complete."
 # ls -lh "$archivepath"

@@ -21,8 +21,8 @@ list_archives() {
     if [ $i -eq 0 ]; then
       echo "Backup files on $device" >&2
     fi
-    if [ -f "$path/$name/$descfile" ]; then
-      note=$(cat "$path/$name/$descfile")
+    if [ -f "$path/$name/$g_descfile" ]; then
+      note=$(cat "$path/$name/$g_descfile")
     else
       note="<no desc>"
     fi

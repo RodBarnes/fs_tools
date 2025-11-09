@@ -61,7 +61,7 @@ echo "Listing backup files..."
 while true; do
   archivename=$(select_archive "$g_backuppath")
   if [ ! -z $archivename ]; then
-    delete_snapshot "$g_backuppath/$g_backupdir" "$snapshotname"
+    delete_archive "$g_backuppath/$g_backupdir" "$archivename"
   else
     exit
   fi
