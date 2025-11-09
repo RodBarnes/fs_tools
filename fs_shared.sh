@@ -2,7 +2,7 @@
 
 # Shared code and variables for fs_tools
 
-source /usr/local/lib/color
+source /usr/local/lib/display
 source /usr/local/lib/device
 
 g_descfile=comment.txt
