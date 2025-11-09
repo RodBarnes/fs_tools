@@ -18,8 +18,8 @@ select_archive() {
 
   # Get the archives
   while IFS= read -r archive; do
-    if [ -f "$path/fs/$archive/$descfile" ]; then
-      comment=$(cat "$path/fs/$archive/$descfile")
+    if [ -f "$path/fs/$archive/$g_descfile" ]; then
+      comment=$(cat "$path/fs/$archive/$g_descfile")
     else
       comment="<no desc>"
     fi
