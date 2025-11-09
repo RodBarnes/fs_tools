@@ -159,7 +159,7 @@ if [ $# -ge 2 ]; then
     printx "No valid device was found for '$device'."
     exit
   fi
-  sourcedisk="$2"
+  sourcedisk="$1"
   shift 1
   if [[ ! -b "$sourcedisk" ]]; then
     printx "Error: The specified source '$sourcedisk' is not a block device."
@@ -211,7 +211,8 @@ if [[ ${#selected[@]} -eq 0 ]]; then
 fi
 
 # Create backup directory and save partition table
-archivepath="$g_backuppath/$g_backupdir/$g_timestamp_$(hostname -s)"
+archivename="${g_timestamp}_$(hostname -s)"
+archivepath="$g_backuppath/$g_backupdir/$archivename"
 mkdir -p "$archivepath"
 
 echo "Saving partition table to $archivepath/..."
