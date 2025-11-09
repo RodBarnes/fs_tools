@@ -68,14 +68,16 @@ backup_filesystem() {
 }
 
 select_backup_partitions() {
-  local disk=$1 root=$2
+  local disk=$1 root=$2 active=$3
   # Get partitions, excluding unsupported filesystems and optionally the active partition
 
+  # show "disk=$disk, root=$root, active=$active"
+  
   local partitions=()
   while IFS= read -r partition; do
     local fstype=$(lsblk -fno fstype "$partition" | head -n1)
     if [[ -n "$fstype" && $fstype =~ ^($supported_fstypes)$ ]]; then
-      if [[ "$partition" == "$root" && "$include_active" == "false" ]]; then
+      if [[ -z $active && "$partition" == "$root" ]]; then
         # Skip active partitions unless user specifically asks to include them
         show "Note: Skipping $partition (active root partition; use --include-active to back up)"
       else
@@ -195,7 +197,7 @@ mount_device_at_path "$backupdevice" "$g_backuppath"
 root_part=$(findmnt -n -o SOURCE /)
 
 # Selected the partitions to backup
-readarray -t selected < <(select_backup_partitions "$sourcedisk" "$root_part")   
+readarray -t selected < <(select_backup_partitions "$sourcedisk" "$root_part" "$include_active")
 
 # Output selected options
 # echo "Show selections"
