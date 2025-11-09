@@ -62,7 +62,7 @@ backup_filesystem() {
   fi
 
   show "Backing up $partition_device to archive..."
-  fsarchiver savefs $options "$fsa_file" "$partition_device" &>> "$g_outputfile"
+  fsarchiver savefs $options "$fsa_file" "$partition_device" &>> "$g_logfile"
   if [ $? -ne 0 ]; then
     showx "\nError: Failed to back up $partition_device"
   fi
@@ -179,7 +179,7 @@ if [[ "$EUID" != 0 ]]; then
 fi
 
 # Initialize the log file
-echo -n &> "$g_outputfile"
+echo -n &> "$g_logfile"
 
 mount_device_at_path "$backupdevice" "$g_backuppath"
 
@@ -218,4 +218,4 @@ echo "($(sudo du -sh $archivepath | awk '{print $1}')) $comment" > "$archivepath
 
 echo "✅ Backup complete."
 # ls -lh "$archivepath"
-echo "Details of the operation can be viewed in the file $g_outputfile"
+echo "Details of the operation can be viewed in the file $g_logfile"
