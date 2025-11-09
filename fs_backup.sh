@@ -110,7 +110,6 @@ select_backup_partitions() {
 # --------------------
 
 supported_fstypes="ext2|ext3|ext4|xfs|btrfs|ntfs|vfat|fat16|fat32|reiserfs"
-dateformat="+%Y%m%d_%H%M%S"
 
 trap 'unmount_device_at_path "$g_backuppath"' EXIT
 
@@ -203,7 +202,7 @@ if [[ ${#selected[@]} -eq 0 ]]; then
 fi
 
 # Create backup directory and save partition table
-archivepath="$g_backuppath/$g_backupdir/$(date $dateformat)_$(hostname -s)"
+archivepath="$g_backuppath/$g_backupdir/$g_timestamp_$(hostname -s)"
 mkdir -p "$archivepath"
 
 echo "Saving partition table to $archivepath/..."
