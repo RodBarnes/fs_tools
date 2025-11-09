@@ -12,7 +12,7 @@ g_backuppath=/mnt/backup
 g_backupdir="fs"
 
 select_archive() {
-  local path=$1
+  local device=$1 path=$2
   
   local name archives=()
 

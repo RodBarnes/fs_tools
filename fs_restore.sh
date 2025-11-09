@@ -191,7 +191,7 @@ mount_device_at_path "$backupdevice" "$g_backuppath"
 
 if [ -z $archivename ]; then
   echo "Select an archive..."
-  archivename=$(select_archive "$g_backuppath")
+  archivename=$(select_archive "$backupdevice" "$g_backuppath")
   if [ -z $archivename ]; then
     show "Operation cancelled"
     exit

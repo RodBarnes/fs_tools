@@ -57,9 +57,8 @@ fi
 
 mount_device_at_path "$backupdevice" "$g_backuppath"
 
-echo "Listing backup files..."
 while true; do
-  archivename=$(select_archive "$g_backuppath")
+  archivename=$(select_archive "$backupdevice" "$g_backuppath")
   if [ ! -z $archivename ]; then
     delete_archive "$g_backuppath/$g_backupdir" "$archivename"
   else
