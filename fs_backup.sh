@@ -179,7 +179,7 @@ if [[ "$EUID" != 0 ]]; then
 fi
 
 # Initialize the log file
-echo &> "$g_outputfile"
+echo -n &> "$g_outputfile"
 
 mount_device_at_path "$backupdevice" "$g_backuppath"
 
