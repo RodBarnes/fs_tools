@@ -9,7 +9,6 @@ show_syntax() {
   echo "Syntax: $0 <backup_device> <target_disk> [-b|--backup]"
   echo "Where:  <backup_device> can be a backupdevice designator (e.g., /dev/sdb6), a UUID, filesystem LABEL, or partition UUID"
   echo "        <target_disk> is the disk to which the restore should be applied."
-  echo "        [-a|--include-active] is an option to direct restoring to partitions that are active; i.e., online."
   echo "        [-b|backup directory] is the name of the specific backup directory to restore."
   exit
 }
