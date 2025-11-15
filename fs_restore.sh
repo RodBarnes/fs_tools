@@ -150,30 +150,25 @@ done
 
 if [ $# -ge 2 ]; then
   arg="$1"
-  shift 1
   device="${arg#/dev/}" # in case it is a device designator
   backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "$device" | tr -s ' ' | cut -d ' ' -f1)"
-  if [ -z $backupdevice ]; then
+  if [ ! -b $backupdevice ]; then
     printx "No valid device was found for '$device'."
     exit
   fi
-  targetdisk="$1"
+  restoredevice="$1"
   shift 1
-  if [[ ! -b "$targetdisk" ]]; then
-    printx "No valid device was found for '$targetdisk'."
+  if [[ ! -b "$restoredevice" ]]; then
+    printx "No valid device was found for '$restoredevice'."
     exit
   fi
 else
   show_syntax
 fi
 
-# echo "targetdisk=$targetdisk"
+# echo "restoredevice=$restoredevice"
 # echo "backupdevice=$backupdevice"
 # echo "archivename=$archivename"
-
-if [ -z $backupdevice ] || [ -z $targetdisk ]; then
-  show_syntax
-fi
 
 if [[ "$EUID" != 0 ]]; then
   printx "This must be run as sudo.\n"
@@ -202,7 +197,7 @@ else
   fi
 fi
 
-echo "Restoring '$archivename' to '$targetdisk'..."
+echo "Restoring '$archivename' to '$restoredevice'..."
 
 # Check for partition table backup
 if [[ ! -f "$archivepath/pt-type" ]]; then
@@ -230,8 +225,8 @@ readarray -t selected < <(select_restore_partitions "$archivepath" "$root_part")
 # read
 
 if [[ "${#selected[@]}" > 0 ]]; then
-  echo "Restoring partition table to $targetdisk ..."
-  restore_partition_table "$targetdisk" "$archivepath"
+  echo "Restoring partition table to $restoredevice ..."
+  restore_partition_table "$restoredevice" "$archivepath"
 
   for partition in "${selected[@]}"; do
     restore_filesystem "$partition" "$archivepath" "$root_part"

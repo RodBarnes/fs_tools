@@ -33,10 +33,9 @@ trap 'unmount_device_at_path "$g_backuppath"' EXIT
 # Get the arguments
 if [ $# -ge 1 ]; then
   arg="$1"
-  shift 1
   device="${arg#/dev/}" # in case it is a device designator
   backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "$device" | tr -s ' ' | cut -d ' ' -f1)"
-  if [ -z $backupdevice ]; then
+  if [ ! -b $backupdevice ]; then
     printx "No valid device was found for '$device'."
     exit
   fi
@@ -48,10 +47,6 @@ fi
 # echo "backupdir=$g_backupdir"
 # echo "backupdevice=$backupdevice"
 # exit
-
-if [[ -z "$backupdevice" ]]; then
-  show_syntax
-fi
 
 if [[ "$EUID" != 0 ]]; then
   printx "This must be run as sudo.\n"

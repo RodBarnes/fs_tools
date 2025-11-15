@@ -155,14 +155,14 @@ if [ $# -ge 2 ]; then
   shift 1
   device="${arg#/dev/}" # in case it is a device designator
   backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "$device" | tr -s ' ' | cut -d ' ' -f1)"
-  if [ -z $backupdevice ]; then
+  if [ ! -b $backupdevice ]; then
     printx "No valid device was found for '$device'."
     exit
   fi
   sourcedisk="$1"
   shift 1
   if [[ ! -b "$sourcedisk" ]]; then
-    printx "Error: The specified source '$sourcedisk' is not a block device."
+    printx "No valid device was found for '$sourcedisk'."
     exit
   fi
 else
@@ -177,10 +177,6 @@ fi
 # echo "include-active=$include_active"
 # echo "comment=$comment"
 # exit
-
-if [[ -z "$sourcedisk" || -z "$backupdevice" ]]; then
-  show_syntax
-fi
 
 if [[ "$EUID" != 0 ]]; then
   printx "This must be run as sudo.\n"
