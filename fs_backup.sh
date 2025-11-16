@@ -169,11 +169,11 @@ else
   show_syntax
 fi
 
-# echo "timestamp=$g_timestamp"
 # echo "backuppath=$g_backuppath"
 # echo "backupdir=$g_backupdir"
 # echo "backupdevice=$backupdevice"
 # echo "sourcedisk=$sourcedisk"
+# echo "archivename=$archivename"
 # echo "include-active=$include_active"
 # echo "comment=$comment"
 # exit
@@ -182,9 +182,6 @@ if [[ "$EUID" != 0 ]]; then
   printx "This must be run as sudo.\n"
   exit 1
 fi
-
-# Initialize the log file
-echo -n &> "$g_logfile"
 
 mount_device_at_path "$backupdevice" "$g_backuppath"
 
@@ -206,8 +203,13 @@ if [[ ${#selected[@]} -eq 0 ]]; then
   exit
 fi
 
+archivename="$(date +%Y%m%d_%H%M%S)_$(hostname -s)"
+
+# Initialize the log file
+g_logfile="/tmp/$(basename $0)_$archivename.log"
+echo -n &> "$g_logfile"
+
 # Create backup directory and save partition table
-archivename="${g_timestamp}_$(hostname -s)"
 archivepath="$g_backuppath/$g_backupdir/$archivename"
 mkdir -p "$archivepath"
 

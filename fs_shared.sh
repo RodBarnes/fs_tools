@@ -5,9 +5,7 @@
 source /usr/local/lib/display.sh
 source /usr/local/lib/device.sh
 
-g_timestamp=$(date +%Y%m%d_%H%M%S)
 g_descfile=comment.txt
-g_logfile="/tmp/$(basename $0)_$g_timestamp.log"
 g_backuppath=/mnt/backup
 g_backupdir="fs"
 

@@ -175,9 +175,6 @@ if [[ "$EUID" != 0 ]]; then
   exit 1
 fi
 
-# Initialize the log file
-echo -n &> "$g_logfile"
-
 mount_device_at_path "$backupdevice" "$g_backuppath"
 
 if [ -z $archivename ]; then
@@ -196,6 +193,10 @@ else
     exit 2
   fi
 fi
+
+# Initialize the log file
+g_logfile="/tmp/$(basename $0)_$archivename.log"
+echo -n &> "$g_logfile"
 
 echo "Restoring '$archivename' to '$restoredevice'..."
 
