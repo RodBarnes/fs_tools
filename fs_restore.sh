@@ -96,23 +96,29 @@ select_restore_partitions() {
       partitions+=("$partname")
     fi
   done
+
   if [[ ${#partitions[@]} -eq 0 ]]; then
+    # No partitions
     showx "Error: No valid partitions available for restore."
     exit 3
+  elif [[ ${#partitions[@]} -eq 1 ]]; then
+    # One partition
+    echo ${partitions[0]}
+    return
+  else
+    # Multiple partitions
+    local selected=()
+    for i in "${!partitions[@]}"; do
+        read -p "Restore partition ${partitions[i]}? (y/N)" yn
+        if [[ $yn == "y" || $yn == "Y" ]]; then
+          selected+=("${partitions[i]}")
+        fi
+    done
+    # Output the selections
+    for i in "${!selected[@]}"; do
+      echo "${selected[i]}"
+    done
   fi
-
-  local selected=()
-  for i in "${!partitions[@]}"; do
-      read -p "Restore partition ${partitions[i]}? (y/N)" yn
-      if [[ $yn == "y" || $yn == "Y" ]]; then
-        selected+=("${partitions[i]}")
-      fi
-  done
-
-  # Output the selections
-  for i in "${!selected[@]}"; do
-    echo "${selected[i]}"
-  done
 }
 
 # --------------------
@@ -219,7 +225,7 @@ root_part=$(findmnt -n -o SOURCE /)
 # Selected the partitions to retore
 readarray -t selected < <(select_restore_partitions "$archivepath" "$root_part")   
 
-# Output selected options
+# # Output selected options
 # echo "Show selections"
 # for i in "${!selected[@]}"; do
 #     echo "${selected[i]}"
