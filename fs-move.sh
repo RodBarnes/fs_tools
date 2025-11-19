@@ -8,3 +8,7 @@ sudo chmod +x fs_*.sh
 for file in fs_*.sh; do
 	sudo mv "$file" "/usr/local/bin/${file%.sh}"
 done
+
+sudo bash fs-sha256.sh
+rm fs-sha256.sh
+rm fs-move.sh
