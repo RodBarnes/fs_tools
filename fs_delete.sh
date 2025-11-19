@@ -32,9 +32,7 @@ trap 'unmount_device_at_path "$g_backuppath"' EXIT
 
 # Get the arguments
 if [ $# -ge 1 ]; then
-  arg="$1"
-  device="${arg#/dev/}" # in case it is a device designator
-  backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "$device" | tr -s ' ' | cut -d ' ' -f1)"
+  backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "${1#/dev/}" | tr -s ' ' | cut -d ' ' -f1)"
 else
   show_syntax
 fi

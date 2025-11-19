@@ -151,12 +151,8 @@ while true; do
 done
 
 if [ $# -ge 2 ]; then
-  arg="$1"
-  shift 1
-  device="${arg#/dev/}" # in case it is a device designator
-  backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "$device" | tr -s ' ' | cut -d ' ' -f1)"
-  sourcedisk="$1"
-  shift 1
+  backupdevice="/dev/$(lsblk -ln -o NAME,UUID,PARTUUID,LABEL | grep "${1#/dev/}" | tr -s ' ' | cut -d ' ' -f1)"
+  sourcedisk="$2"
 else
   show_syntax
 fi
